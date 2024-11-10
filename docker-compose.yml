@@ -1,11 +1,24 @@
-version: '3.8'
 
 services:
-  app:
-    container_name: app
-    build:
-      context: .
+  api_db:
+    hostname: api_db
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
     volumes:
-      - ./data:/app/data
+      - pgdata:/var/lib/postgresql/data
+  go-api:
+    container_name: go-api
+    image: gp-api-task
+    build: .
     ports:
       - "8081:8081"
+    depends_on:
+      - "api_db"
+
+volumes:
+  pgdata: {}

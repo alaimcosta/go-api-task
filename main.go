@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 type Task struct {
@@ -22,6 +22,31 @@ type Task struct {
 type TaskService struct {
 	DB          *sql.DB
 	TaskChannel chan Task
+}
+
+const (
+	host     = "api_db"
+	port     = 5432
+	user     = "postgres"
+	password = "1234"
+	dbname   = "postgres"
+)
+
+// ConnectDB função responsável pela conexão com o banco de dados
+func ConnectDB() (*sql.DB, error) {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		fmt.Println("Erro na conexão")
+		panic(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Connect to " + dbname)
+	return db, err
 }
 
 // método, adicionar uma Tesk (tarefa) ###################
@@ -171,16 +196,19 @@ func (t *TaskService) HandleDeleteTasks(w http.ResponseWriter, r *http.Request) 
 }
 
 func main() {
-	db, err := sql.Open("sqlite3", "./data/tasks.db")
+
+	dbConnect, err := ConnectDB()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Erro ao conectar ao banco de dados")
+		panic(err)
 	}
-	defer db.Close()
+
+	fmt.Println("Aqui")
 
 	taskChannel := make(chan Task)
 
 	taskService := TaskService{
-		DB:          db,
+		DB:          dbConnect,
 		TaskChannel: taskChannel,
 	}
 
@@ -188,11 +216,14 @@ func main() {
 	go taskService.ProcessTasks()
 
 	//servidor web
+	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Rota padrão da API")
+	})
 	http.HandleFunc("POST /tasks", taskService.HandleCreateTask)
 	http.HandleFunc("GET /tasks", taskService.HandleListTasks)
 	http.HandleFunc("DELETE /task/{id}", taskService.HandleDeleteTask)
 	http.HandleFunc("DELETE /tasks", taskService.HandleDeleteTasks)
 
-	log.Println("Server running on port 8081")
+	log.Println("Servidor executando na porta 8081")
 	http.ListenAndServe(":8081", nil)
 }
