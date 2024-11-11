@@ -203,8 +203,6 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Aqui")
-
 	taskChannel := make(chan Task)
 
 	taskService := TaskService{
@@ -216,9 +214,6 @@ func main() {
 	go taskService.ProcessTasks()
 
 	//servidor web
-	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Rota padrão da API")
-	})
 	http.HandleFunc("POST /tasks", taskService.HandleCreateTask)
 	http.HandleFunc("GET /tasks", taskService.HandleListTasks)
 	http.HandleFunc("DELETE /task/{id}", taskService.HandleDeleteTask)
