@@ -26,7 +26,7 @@ type TaskService struct {
 }
 
 const (
-	host     = "localhost"
+	host     = "api_db"
 	port     = 5432
 	user     = "postgres"
 	password = "1234"
