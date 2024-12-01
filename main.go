@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,7 +26,7 @@ type TaskService struct {
 }
 
 const (
-	host     = "api_db"
+	host     = "localhost"
 	port     = 5432
 	user     = "postgres"
 	password = "1234"
@@ -51,20 +52,17 @@ func ConnectDB() (*sql.DB, error) {
 
 // método, adicionar uma Tesk (tarefa) ###################
 func (t *TaskService) AddTask(ts *Task) error {
-	query := "INSERT INTO tasks (title, description, status, created_at) VALUES (?, ?, ?, ?)"
-	result, err := t.DB.Exec(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt)
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
+	query := "INSERT INTO tasks (title, description, status, created_at) VALUES ($1, $2, $3, $4) RETURNING id"
+	//_, err := t.DB.Exec(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt)
+	result := t.DB.QueryRow(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt).Scan(&ts.ID)
+	if result != nil {
+		log.Fatal(result)
 	}
-
-	ts.ID = int(id)
-	return err
+	return nil
 }
 
 func (t *TaskService) UpdateTaskStatus(ts Task) error {
-	query := "UPDATE tasks SET status = ? WHERE id = ?"
+	query := "UPDATE tasks SET status = $1 WHERE id = $2"
 	_, err := t.DB.Exec(query, ts.Status, ts.ID)
 	if err != nil {
 		log.Fatal(err)
@@ -75,12 +73,22 @@ func (t *TaskService) UpdateTaskStatus(ts Task) error {
 
 // DeleteTask
 func (t *TaskService) DeleteTask(ts string) error {
-	query := "DELETE FROM tasks WHERE id = ?"
-	_, err := t.DB.Exec(query, ts)
+
+	query := "DELETE FROM tasks WHERE id = $1"
+	result, err := t.DB.Exec(query, ts)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return err
+
+	res, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if res == 0 {
+		return errors.New("Task not found")
+	}
+	return nil
 }
 
 // DeleteTasks
@@ -146,7 +154,8 @@ func (t *TaskService) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
 
 	//altero o status da tarefa
 	task.Status = "pending"
-	task.CreatedAt = time.Now()
+
+	//task.CreatedAt = time.Now()
 
 	err = t.AddTask(&task)
 
