@@ -26,7 +26,7 @@ type TaskService struct {
 }
 
 const (
-	host     = "api_db"
+	host     = "44.220.93.71"
 	port     = 5432
 	user     = "postgres"
 	password = "1234"
@@ -53,7 +53,7 @@ func ConnectDB() (*sql.DB, error) {
 // método, adicionar uma Tesk (tarefa) ###################
 func (t *TaskService) AddTask(ts *Task) error {
 	query := `INSERT INTO tasks (title, description, status, created_at) VALUES ($1, $2, $3, $4) RETURNING id`
-
+	//_, err := t.DB.Exec(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt)
 	result := t.DB.QueryRow(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt).Scan(&ts.ID)
 	if result != nil {
 		log.Fatal(result)
