@@ -52,7 +52,7 @@ func ConnectDB() (*sql.DB, error) {
 
 // método, adicionar uma Tesk (tarefa) ###################
 func (t *TaskService) AddTask(ts *Task) error {
-	query := "INSERT INTO tasks (title, description, status, created_at) VALUES ($1, $2, $3, $4) RETURNING id"
+	query := `INSERT INTO tasks (title, description, status, created_at) VALUES ($1, $2, $3, $4) RETURNING id`
 	//_, err := t.DB.Exec(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt)
 	result := t.DB.QueryRow(query, ts.Title, ts.Desciption, ts.Status, ts.CreatedAt).Scan(&ts.ID)
 	if result != nil {
